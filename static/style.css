@@ -1,0 +1,846 @@
+/* =========================================
+   CSS Custom Properties
+   ========================================= */
+:root {
+    --bg:              #080c09;
+    --surface:         #0d1210;
+    --surface-2:       #111916;
+    --surface-3:       #161e17;
+    --text:            #ecf0ec;
+    --muted:           #8da48f;
+    --accent:          #34d399;
+    --accent-strong:   #22c55e;
+    --accent-soft:     rgba(52, 211, 153, 0.13);
+    --border:          rgba(52, 211, 153, 0.18);
+    --border-strong:   rgba(52, 211, 153, 0.32);
+    --red:             #f87171;
+    --red-soft:        rgba(248, 113, 113, 0.13);
+    --red-border:      rgba(248, 113, 113, 0.22);
+    --amber:           #fbbf24;
+    --shadow:          0 8px 32px rgba(0, 0, 0, 0.4);
+    --radius:          14px;
+    --radius-sm:       10px;
+}
+
+/* =========================================
+   Reset & Base
+   ========================================= */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* =========================================
+   Page Wrapper — constrains all content on wide screens
+   ========================================= */
+.page-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    background: var(--bg);
+}
+
+/* =========================================
+   Top Bar
+   ========================================= */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(8, 12, 9, 0.97);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-radius: 0;
+}
+
+.search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    flex: 1;
+    max-width: 300px;
+    transition: border-color 0.2s;
+}
+
+.search-wrap:focus-within {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.1);
+}
+
+.search-wrap i {
+    color: var(--muted);
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.search-wrap input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 13px;
+    width: 100%;
+    font-family: inherit;
+}
+
+.search-wrap input::placeholder {
+    color: var(--muted);
+}
+
+.btn-search {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+    color: #041106;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.btn-search:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.btn-search:active {
+    transform: translateY(0);
+}
+
+/* Bookmarks dropdown */
+.bookmarks-dropdown {
+    position: relative;
+}
+
+.btn-bookmark {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-bookmark i {
+    color: var(--accent);
+    font-size: 12px;
+}
+
+.btn-bookmark:hover {
+    background: var(--accent-soft);
+    border-color: var(--border-strong);
+}
+
+.bookmarks-list {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--surface-2);
+    min-width: 260px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 200;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.bookmarks-list.show {
+    display: block;
+}
+
+.bookmark-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.15s;
+}
+
+.bookmark-item:last-child {
+    border-bottom: none;
+}
+
+.bookmark-item:hover {
+    background: var(--accent-soft);
+}
+
+.bookmark-item .delete-bookmark {
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.bookmark-item .delete-bookmark:hover {
+    background: var(--red-soft);
+}
+
+.no-bookmarks {
+    padding: 16px 14px;
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+/* =========================================
+   Intro Card
+   ========================================= */
+.intro-card {
+    max-width: 1160px;
+    margin: 16px auto;
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.intro-card h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.intro-card p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.intro-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.intro-card li {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.step {
+    color: var(--accent);
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+/* =========================================
+   Hero
+   ========================================= */
+.hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 20px clamp(16px, 3%, 40px) 0;
+    flex-wrap: wrap;
+}
+
+.stock-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.hero h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+}
+
+#bookmark-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+#bookmark-btn:hover {
+    background: var(--accent-soft);
+    border-color: var(--border-strong);
+}
+
+.hero-sub {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.hero-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.hero-price {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+.hero-change {
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 2px;
+}
+
+.hero-change.negative {
+    color: var(--red);
+}
+
+/* =========================================
+   Stats Row
+   ========================================= */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 16px clamp(16px, 3%, 40px) 0;
+}
+
+.stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.stat-val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+}
+
+.stat-val.accent {
+    color: var(--accent);
+}
+
+.stat-unit {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+/* =========================================
+   Main Layout
+   ========================================= */
+.main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 16px clamp(16px, 3%, 40px);
+    display: grid;
+    gap: 14px;
+}
+
+/* =========================================
+   Cards (base)
+   ========================================= */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+}
+
+.section-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0;
+}
+
+/* =========================================
+   Quick Recommendation
+   ========================================= */
+.reco-card {
+    background: var(--surface);
+}
+
+.reco-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 4px 12px;
+    border-radius: 999px;
+}
+
+.badge-buy,
+.badge.buy {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+.badge-sell,
+.badge.sell {
+    background: var(--red-soft);
+    color: var(--red);
+    border: 1px solid var(--red-border);
+}
+
+.badge-hold,
+.badge.hold {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--amber);
+    border: 1px solid rgba(251, 191, 36, 0.24);
+}
+
+.reco-action {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.reco-advice {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.reco-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.reco-stat {
+    background: var(--surface-2);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reco-stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.reco-stat-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.simple-tip {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+
+/* =========================================
+   Signal Cards
+   ========================================= */
+.signals-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.signal-card {
+    border-left: 3px solid var(--border-strong);
+    transition: transform 0.2s;
+}
+
+.signal-card:hover {
+    transform: translateY(-2px);
+}
+
+.signal-card.card-buy {
+    border-left-color: var(--accent-strong);
+}
+
+.signal-card.card-sell {
+    border-left-color: var(--red);
+}
+
+.signal-card.card-hold {
+    border-left-color: var(--amber);
+}
+
+.sig-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.signal-badge {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid rgba(52, 211, 153, 0.24);
+    min-width: 72px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.signal-badge.sell-badge {
+    background: var(--red-soft);
+    color: var(--red);
+    border-color: var(--red-border);
+}
+
+.sig-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.sig-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 3px;
+}
+
+.sig-sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.pressure-bar-wrap {
+    background: var(--accent-soft);
+    border-radius: 999px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 14px;
+}
+
+.pressure-bar-wrap.sell-track {
+    background: var(--red-soft);
+}
+
+.pressure-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 0.5s ease;
+}
+
+.buy-bar {
+    background: var(--accent);
+}
+
+.sell-bar {
+    background: var(--red);
+}
+
+.sig-detail-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-bottom: 10px;
+}
+
+.sig-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(52, 211, 153, 0.07);
+}
+
+.sig-row:last-child {
+    border-bottom: none;
+}
+
+.sig-row span {
+    color: var(--muted);
+}
+
+.sig-row strong {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.signal-factors {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.signal-factor-item {
+    font-size: 12px;
+    padding: 4px 0;
+    color: var(--muted);
+}
+
+.factor-positive { color: #4ade80; }
+.factor-negative { color: var(--red); }
+.factor-warning  { color: var(--amber); }
+
+/* =========================================
+   Financial Snapshot
+   ========================================= */
+.fin-rows {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.fin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(52, 211, 153, 0.08);
+}
+
+.fin-row:last-child {
+    border-bottom: none;
+}
+
+.fin-row span {
+    color: var(--muted);
+}
+
+.fin-row strong {
+    font-weight: 700;
+    color: var(--text);
+}
+
+.financial-note {
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+/* =========================================
+   Quarterly Table Section
+   ========================================= */
+.table-section {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 3%, 40px) 28px;
+}
+
+.table-section .section-label {
+    margin-bottom: 4px;
+}
+
+.table-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+}
+
+.table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+#quarterly-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#quarterly-table th {
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+#quarterly-table td {
+    padding: 11px 16px;
+    font-size: 13px;
+    color: var(--text);
+    border-bottom: 1px solid rgba(52, 211, 153, 0.07);
+}
+
+#quarterly-table tr:last-child td {
+    border-bottom: none;
+}
+
+#quarterly-table tr:nth-child(even) td {
+    background: rgba(52, 211, 153, 0.03);
+}
+
+/* =========================================
+   TradingView
+   ========================================= */
+.card:has(#tradingview_chart) {
+    padding-bottom: 16px;
+}
+
+.tradingview-widget-container {
+    width: 100%;
+    min-height: 620px;
+    height: 620px;
+    display: block;
+    overflow: hidden;
+    position: relative;
+}
+
+#tradingview_chart {
+    width: 100%;
+    min-height: 620px;
+    height: 620px;
+    display: block;
+}
+
+#tradingview_chart > iframe {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 620px !important;
+    display: block;
+}
+
+/* =========================================
+   Error card
+   ========================================= */
+.error-card {
+    margin: 0 0 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--red-soft);
+    border: 1px solid var(--red-border);
+    color: #ffe4e6;
+    font-size: 13px;
+}
+
+/* =========================================
+   Responsive
+   ========================================= */
+@media (max-width: 860px) {
+    .stats-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .signals-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .topbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .search-wrap {
+        max-width: 100%;
+    }
+
+    .hero {
+        flex-direction: column;
+    }
+
+    .hero-right {
+        text-align: left;
+    }
+
+    .stats-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .reco-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    #quarterly-table th,
+    #quarterly-table td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}

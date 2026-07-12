@@ -1,0 +1,16 @@
+# Environment variables — never commit these
+.env
+
+# Model files — large binaries, retrain locally
+models/*.pkl
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+logs/
+
+# Data folder (fetched fresh from API)
+data/

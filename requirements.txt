@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+jinja2
+requests
+gunicorn
+pandas
+numpy
+scikit-learn
+lightgbm
+joblib
+yfinance
+python-dotenv

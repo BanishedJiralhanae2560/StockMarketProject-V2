@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css?v=7">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<div class="page-wrapper">
+
+<!-- Top bar -->
+<div class="topbar">
+    <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="ticker-input" placeholder="Ticker — e.g. AAPL">
+    </div>
+    <button class="btn-search" onclick="loadStockData()">Search</button>
+    <div class="bookmarks-dropdown">
+        <button class="btn-bookmark" onclick="toggleBookmarksList()">
+            <i class="fas fa-bookmark"></i> Bookmarks
+        </button>
+        <div class="bookmarks-list" id="bookmarks-list">
+            <div class="no-bookmarks">No bookmarks yet</div>
+        </div>
+    </div>
+</div>
+
+<!-- Inline error banner — populated by showInlineError() in script.js -->
+<div id="error-message" class="error-card" style="display:none; margin: 0 20px;"></div>
+
+<!-- Intro card (shown before any search) -->
+<div class="intro-card" id="intro-card">
+    <h2>Beginner stock dashboard</h2>
+    <p>Enter a ticker symbol and get a plain-language recommendation. Designed for people new to stocks.</p>
+    <ul>
+        <li><span class="step">1.</span> Type a ticker like AAPL</li>
+        <li><span class="step">2.</span> Read the simple recommendation</li>
+        <li><span class="step">3.</span> Save stocks with bookmarks</li>
+    </ul>
+</div>
+
+<!-- Hero: stock name + price -->
+<div class="hero" id="stock-hero">
+    <div class="hero-left">
+        <div class="stock-title-row">
+            <h1 id="stock-name">Stock Dashboard</h1>
+            <button id="bookmark-btn" onclick="toggleBookmark()">
+                <i class="far fa-bookmark"></i> Bookmark
+            </button>
+        </div>
+        <p id="recommendation" class="hero-sub"></p>
+    </div>
+    <div class="hero-right">
+        <div class="hero-price">$<span id="current-price">—</span></div>
+        <div class="hero-change">
+            <span id="change">—</span> (<span id="change-percent">—</span>%)
+        </div>
+    </div>
+</div>
+
+<!-- Stats row -->
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-label">Volume</span>
+        <span class="stat-val" id="volume">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Revenue growth (QoQ)</span>
+        <span class="stat-val accent" id="revenue-growth">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Asset growth (QoQ)</span>
+        <span class="stat-val accent" id="asset-growth">—</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Growth factor</span>
+        <span class="stat-val" id="growth-factor">—</span>
+    </div>
+</div>
+
+<main class="main">
+
+    <!-- Quick recommendation -->
+    <div class="card reco-card">
+        <div class="reco-header">
+            <span class="section-label">Quick recommendation</span>
+            <span class="badge" id="buy-signal">—</span>
+        </div>
+        <p class="reco-action" id="hero-action">Search a ticker to see a recommendation</p>
+        <p class="reco-advice" id="hero-advice">The dashboard will give a clear suggestion for beginners.</p>
+        <div class="reco-row">
+            <div class="reco-stat">
+                <span class="reco-stat-label">Confidence</span>
+                <span class="reco-stat-val" id="confidence">—</span>
+            </div>
+            <div class="reco-stat">
+                <span class="reco-stat-label">Risk level</span>
+                <span class="reco-stat-val" id="risk-level">—</span>
+            </div>
+        </div>
+        <p class="simple-tip" id="simple-tip">Use bookmarks to save stocks you want to follow.</p>
+    </div>
+
+    <!-- Signal cards -->
+    <div class="signals-row">
+
+        <div class="card signal-card" id="buy-signal-card">
+            <div class="sig-top">
+                <div class="signal-badge" id="buy-signal-badge">—</div>
+                <div class="sig-meta">
+                    <p class="sig-title">Buy signal analysis</p>
+                    <p class="sig-sub">Confidence: <span id="buy-confidence-detail">—</span> · Growth <span id="buy-growth-factor-detail">—</span>/10</p>
+                </div>
+            </div>
+            <div class="pressure-bar-wrap">
+                <div class="pressure-bar buy-bar" id="buy-pressure-bar"></div>
+            </div>
+            <div class="sig-detail-rows">
+                <div class="sig-row"><span>Buy recommendation</span><strong id="buy-recommendation-detail">—</strong></div>
+                <div class="sig-row"><span>Risk level</span><strong id="buy-risk-level-detail">—</strong></div>
+            </div>
+            <div class="signal-factors" id="buy-factors"></div>
+        </div>
+
+        <div class="card signal-card" id="sell-signal-card">
+            <div class="sig-top">
+                <div class="signal-badge sell-badge" id="sell-signal-badge">—</div>
+                <div class="sig-meta">
+                    <p class="sig-title">Sell signal analysis</p>
+                    <p class="sig-sub">Pressure: <span id="sell-pressure">—</span>/10 · Ratio <span id="liability-ratio">—</span></p>
+                </div>
+            </div>
+            <div class="pressure-bar-wrap sell-track">
+                <div class="pressure-bar sell-bar" id="sell-pressure-bar"></div>
+            </div>
+            <div class="sig-detail-rows">
+                <div class="sig-row"><span>Sell recommendation</span><strong id="sell-recommendation">—</strong></div>
+                <div class="sig-row"><span>Sell confidence</span><strong id="sell-confidence">—</strong></div>
+            </div>
+            <div class="signal-factors" id="sell-factors"></div>
+        </div>
+
+    </div>
+
+    <!-- TradingView chart -->
+    <div class="card">
+        <p class="section-label" style="margin-bottom: 12px;">Price chart</p>
+        <div class="tradingview-widget-container">
+            <div id="tradingview_chart"></div>
+        </div>
+    </div>
+
+    <!-- Financial snapshot -->
+    <div class="card">
+        <p class="section-label" style="margin-bottom: 12px;">Financial snapshot</p>
+        <div class="fin-rows" id="financial-summary">
+            <div class="fin-row"><span>Revenue growth (QoQ)</span><strong id="rev-growth-detail">—%</strong></div>
+            <div class="fin-row"><span>Asset growth (QoQ)</span><strong id="asset-growth-detail">—%</strong></div>
+            <div class="fin-row"><span>Growth factor</span><strong id="growth-factor-detail">— / 10</strong></div>
+        </div>
+        <p class="financial-note">A quick overview of company health based on recent quarterly data.</p>
+    </div>
+
+</main>
+
+<!-- Quarterly table -->
+<div class="table-section">
+    <p class="section-label">Quarterly financials</p>
+    <p class="table-sub">How the business has changed over recent quarters.</p>
+    <div class="table-wrap">
+        <table id="quarterly-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Revenue</th>
+                    <th>Expenses</th>
+                    <th>Assets</th>
+                    <th>Liabilities</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/static/script.js?v=5" defer></script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js" defer></script>
+
+</div><!-- /page-wrapper -->
+</body>
+</html>
