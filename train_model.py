@@ -31,8 +31,9 @@ def collect_bulk_api_data() -> pd.DataFrame:
 
     for ticker in TICKERS_POOL:
         print(f"  Fetching: {ticker}")
-        # Use yfinance for training data — no rate limits, up to 10 years of data
-        results = fetch_yfinance_price_history(ticker, days=3650)  # ~10 years
+        # Match the available quarterly financial window so most rows retain
+        # real fundamental features instead of falling back to zeros.
+        results = fetch_yfinance_price_history(ticker, days=548)  # ~18 months
         if not results:
             print(f"    No price data for {ticker}, skipping.")
             continue

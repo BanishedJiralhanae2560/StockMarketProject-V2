@@ -271,6 +271,13 @@ function setFallbackValues() {
     document.getElementById('hero-advice').textContent = 'Check the ticker and try again.';
 }
 
+function formatCurrency(value) {
+    if (value === null || value === undefined || value === '') return 'N/A';
+    const numberValue = Number(value);
+    if (!Number.isFinite(numberValue)) return 'N/A';
+    return '$' + numberValue.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
 function loadStockData() {
     const tickerInput = document.getElementById('ticker-input').value.trim();
     const ticker = tickerInput || 'AAPL';
@@ -328,10 +335,10 @@ function loadStockData() {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${quarter.period || 'N/A'}</td>
-                        <td>${quarter.revenue     ? '$' + quarter.revenue.toLocaleString()     : 'N/A'}</td>
-                        <td>${quarter.expenses    ? '$' + quarter.expenses.toLocaleString()    : 'N/A'}</td>
-                        <td>${quarter.assets      ? '$' + quarter.assets.toLocaleString()      : 'N/A'}</td>
-                        <td>${quarter.liabilities ? '$' + quarter.liabilities.toLocaleString() : 'N/A'}</td>
+                        <td>${formatCurrency(quarter.revenue)}</td>
+                        <td>${formatCurrency(quarter.expenses)}</td>
+                        <td>${formatCurrency(quarter.assets)}</td>
+                        <td>${formatCurrency(quarter.liabilities)}</td>
                     `;
                     tableBody.appendChild(row);
                 });

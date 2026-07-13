@@ -9,23 +9,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-# ══════════════════════════════════════════════════════════════════════════════
-# DUAL DATA SOURCE STRATEGY (Option B Implementation)
-# ──────────────────────────────────────────────────────────────────────────────
-# • yfinance:  Used for TRAINING data — free, unlimited, ~10 years history per ticker
-#   (~7,500 rows/ticker × 30 tickers = ~225,000 training rows)
-# • Polygon:   Used for LIVE price lookups in the web app and financials features
-#   (Polygon free tier still provides real-time quotes and quarterly financials)
-#
-# This hybrid approach maximizes training data volume (the real bottleneck) while
-# keeping the live app responsive with Polygon's premium quote service.
-# ══════════════════════════════════════════════════════════════════════════════
-
 # ── API Keys ──────────────────────────────────────────────────────────────────
-# Load from environment variables only. Set these in your .env file.
-# Never hardcode keys here — if this file reaches a public repo, the key
-# will be compromised. See .env.example for the required variable names.
-POLYGON_API_KEY = os.getenv("POLYGON_API_KEY", "").strip()
+POLYGON_API_KEY       = os.getenv("POLYGON_API_KEY", "").strip()
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "").strip()
 
 if not POLYGON_API_KEY:
@@ -37,7 +22,7 @@ if not POLYGON_API_KEY:
 
 
 def _polygon_request(path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    url = f"https://api.polygon.io{path}"
+    url     = f"https://api.polygon.io{path}"
     payload = {"apiKey": POLYGON_API_KEY}
     if params:
         payload.update(params)
@@ -46,32 +31,29 @@ def _polygon_request(path: str, params: Optional[Dict[str, Any]] = None) -> Dict
     return response.json()
 
 
+# ── yfinance — used for ALL training data (price + financials) ────────────────
+
 def fetch_yfinance_price_history(ticker: str, days: int = 2500) -> List[Dict[str, Any]]:
     """
-    Fetches historical daily bars using yfinance (free, no rate limit).
-    Returns up to ~10 years of daily data per ticker.
-    This is used for model TRAINING only.
-    Returns data in same format as Polygon for compatibility.
+    Fetches historical daily OHLCV bars via yfinance (free, no rate limit).
+    Returns data in Polygon-compatible format for drop-in compatibility.
+    Used for model TRAINING only.
     """
     try:
-        end = datetime.utcnow().date()
+        end   = datetime.utcnow().date()
         start = end - timedelta(days=days)
-        
-        # Download data from Yahoo Finance
+
         df = yf.download(ticker, start=start, end=end, progress=False)
-        
+
         if df.empty:
-            print(f"No data from yfinance for {ticker}")
+            print(f"No price data from yfinance for {ticker}")
             return []
 
-        # Flatten MultiIndex columns if present (yfinance 1.5+ adds a ticker level)
+        # yfinance 1.5+ returns MultiIndex columns — flatten to single level
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
-
-        # Drop duplicate column names that can appear after flattening
         df = df.loc[:, ~df.columns.duplicated()]
 
-        # Convert to Polygon-compatible format
         results = []
         for date, row in df.iterrows():
             results.append({
@@ -82,8 +64,8 @@ def fetch_yfinance_price_history(ticker: str, days: int = 2500) -> List[Dict[str
                 "c": float(row["Close"]),
                 "v": int(row["Volume"]),
             })
-        
         return results
+
     except Exception as e:
         print(f"Error fetching yfinance history for {ticker}: {e}")
         return []
@@ -91,13 +73,13 @@ def fetch_yfinance_price_history(ticker: str, days: int = 2500) -> List[Dict[str
 
 def fetch_yfinance_financials(ticker: str) -> pd.DataFrame:
     """
-    Fetches quarterly financial statements from yfinance — free, no rate limits.
-    Returns a tidy DataFrame with one row per quarter.
+    Fetches quarterly financial statements via yfinance (free, no rate limit).
+    Returns a tidy DataFrame — one row per quarter — with computed growth metrics.
+    Key names match yfinance 1.5.1 actual index labels confirmed by diagnostics.
     Used for model TRAINING only.
     """
     try:
-        t = yf.Ticker(ticker)
-
+        t        = yf.Ticker(ticker)
         income   = t.quarterly_income_stmt
         balance  = t.quarterly_balance_sheet
         cashflow = t.quarterly_cashflow
@@ -105,8 +87,8 @@ def fetch_yfinance_financials(ticker: str) -> pd.DataFrame:
         if income is None or income.empty:
             return pd.DataFrame()
 
-        def _get_val(df, col, *keys):
-            """Safely extract a float value from a DataFrame at a specific column."""
+        def _get(df, col, *keys):
+            """Safely extract a float scalar from df at (row_key, col)."""
             if df is None or df.empty:
                 return np.nan
             for k in keys:
@@ -121,15 +103,24 @@ def fetch_yfinance_financials(ticker: str) -> pd.DataFrame:
 
         rows = []
         for col in income.columns:
-            revenue     = _get_val(income,   col, "Total Revenue")
-            net_income  = _get_val(income,   col, "Net Income")
-            assets      = _get_val(balance,  col, "Total Assets")
-            liabilities = _get_val(balance,  col,
-                                   "Total Liabilities Net Minority Interest",
-                                   "Total Liabilities")
-            cash_flow   = _get_val(cashflow, col,
-                                   "Operating Cash Flow",
-                                   "Cash Flow From Continuing Operating Activities")
+            # Key names confirmed from yfinance 1.5.1 diagnostic output
+            revenue     = _get(income, col,
+                               "Total Revenue",
+                               "Operating Revenue")
+            net_income  = _get(income, col,
+                               "Net Income",
+                               "Net Income From Continuing Operation Net Minority Interest",
+                               "Net Income From Continuing And Discontinued Operation")
+            assets      = _get(balance, col,
+                               "Total Assets")
+            liabilities = _get(balance, col,
+                               "Total Liabilities Net Minority Interest",
+                               "Total Liabilities",
+                               "Total Non Current Liabilities Net Minority Interest")
+            cash_flow   = _get(cashflow, col,
+                               "Operating Cash Flow",
+                               "Cash Flow From Continuing Operating Activities",
+                               "Net Cash Provided By Operating Activities")
 
             rows.append({
                 "date":        pd.Timestamp(col).normalize(),
@@ -147,6 +138,7 @@ def fetch_yfinance_financials(ticker: str) -> pd.DataFrame:
         df = df.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
         df["date"] = df["date"].astype("datetime64[us]")
 
+        # Quarter-over-quarter growth — sorted oldest→newest so pct_change is correct
         df["revenue_growth_qoq"] = df["revenue"].pct_change().fillna(0).clip(-2, 2)
         df["asset_growth_qoq"]   = df["assets"].pct_change().fillna(0).clip(-2, 2)
         df["liability_ratio"]    = (df["liabilities"] / df["assets"]).clip(0, 5).fillna(0)
@@ -159,15 +151,13 @@ def fetch_yfinance_financials(ticker: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+# ── Polygon — used for LIVE app only (real-time quotes + live financials) ─────
+
 def fetch_polygon_price_history(ticker: str, days: int = 1250) -> List[Dict[str, Any]]:
-    """Fetches historical daily bars. 1250 days corresponds to roughly 5 years of data."""
-    end = datetime.utcnow().date()
-    start = end - timedelta(days=days * 1.45)  # Padding for weekends/holidays
-    payload = {
-        "adjusted": "true",
-        "sort": "asc",
-        "limit": 5000,
-    }
+    """Fetches historical daily bars from Polygon. Used by the live app."""
+    end     = datetime.utcnow().date()
+    start   = end - timedelta(days=days * 1.45)
+    payload = {"adjusted": "true", "sort": "asc", "limit": 5000}
     try:
         data = _polygon_request(
             f"/v2/aggs/ticker/{ticker}/range/1/day/{start:%Y-%m-%d}/{end:%Y-%m-%d}",
@@ -175,45 +165,34 @@ def fetch_polygon_price_history(ticker: str, days: int = 1250) -> List[Dict[str,
         )
         return data.get("results", []) if isinstance(data, dict) else []
     except Exception as e:
-        print(f"Error fetching history for {ticker}: {e}")
+        print(f"Error fetching Polygon history for {ticker}: {e}")
         return []
 
 
 def fetch_polygon_financials(ticker: str, limit: int = 20) -> List[Dict[str, Any]]:
-    """Fetches up to 20 quarters of financial statements."""
+    """Fetches quarterly financials from Polygon. Used by the live app."""
     try:
         data = _polygon_request(
             "/vX/reference/financials",
-            {
-                "ticker": ticker,
-                "timeframe": "quarterly",
-                "limit": limit,
-            },
+            {"ticker": ticker, "timeframe": "quarterly", "limit": limit},
         )
         return data.get("results", []) if isinstance(data, dict) else []
     except Exception as e:
-        print(f"Error fetching financials for {ticker}: {e}")
+        print(f"Error fetching Polygon financials for {ticker}: {e}")
         return []
 
 
-# ── Liability thresholds ──────────────────────────────────────────────────────
-# Defined BEFORE fetch_sector_liability_threshold() which references them.
+# ── Liability thresholds — defined before the function that references them ───
 
 SECTOR_LIABILITY_THRESHOLD = {
-    # Finance — high leverage is the normal business model
     "JPM": 0.92, "BAC": 0.92, "GS": 0.92, "C": 0.92, "V": 0.75, "MA": 0.75,
-    # Utilities / telecoms — capital-intensive, permanently debt-heavy
-    "T": 0.85,
-    # Energy — cyclically leveraged
+    "T":   0.85,
     "XOM": 0.75, "CVX": 0.72,
-    # Consumer staples — moderate leverage normal
-    "KO": 0.78, "PG": 0.72, "WMT": 0.72, "PEP": 0.75,
-    # Industrials
-    "BA": 0.85,
+    "KO":  0.78, "PG":  0.72, "WMT": 0.72, "PEP": 0.75,
+    "BA":  0.85,
 }
 DEFAULT_LIABILITY_THRESHOLD = 0.65
 
-# Sector-keyword-to-threshold mapping for dynamic Polygon lookups
 SECTOR_THRESHOLD_MAP = {
     "financial services": 0.92,
     "financials":         0.92,
@@ -227,20 +206,11 @@ SECTOR_THRESHOLD_MAP = {
 
 
 def fetch_sector_liability_threshold(ticker: str) -> float:
-    """
-    Returns the appropriate liability threshold for a ticker.
-    Checks hardcoded dict first (no API call for known tickers), then
-    falls back to a live Polygon sector lookup, then DEFAULT_LIABILITY_THRESHOLD.
-    """
     if ticker in SECTOR_LIABILITY_THRESHOLD:
         return SECTOR_LIABILITY_THRESHOLD[ticker]
     try:
-        data = _polygon_request(f"/v3/reference/tickers/{ticker}")
-        sector = (
-            data.get("results", {})
-            .get("sic_description", "")
-            .lower()
-        )
+        data   = _polygon_request(f"/v3/reference/tickers/{ticker}")
+        sector = data.get("results", {}).get("sic_description", "").lower()
         for key, threshold in SECTOR_THRESHOLD_MAP.items():
             if key in sector:
                 return threshold
@@ -263,13 +233,13 @@ def resolve_tradingview_symbol(ticker: str) -> str:
         "INTC": "NASDAQ:INTC", "NFLX": "NASDAQ:NFLX", "ORCL": "NASDAQ:ORCL",
         "PEP": "NASDAQ:PEP", "ADBE": "NASDAQ:ADBE", "CRM": "NASDAQ:CRM",
         "QCOM": "NASDAQ:QCOM", "AVGO": "NASDAQ:AVGO", "PYPL": "NASDAQ:PYPL",
-        "IBM": "NYSE:IBM", "BA": "NYSE:BA", "DIS": "NYSE:DIS",
-        "JPM": "NYSE:JPM", "V": "NYSE:V", "MA": "NYSE:MA",
-        "PG": "NYSE:PG", "KO": "NYSE:KO", "WMT": "NYSE:WMT",
-        "T": "NYSE:T", "XOM": "NYSE:XOM", "CVX": "NYSE:CVX",
-        "LLY": "NYSE:LLY", "MRK": "NYSE:MRK", "ABBV": "NYSE:ABBV",
-        "JNJ": "NYSE:JNJ", "PFE": "NYSE:PFE", "BAC": "NYSE:BAC",
-        "GS": "NYSE:GS", "C": "NYSE:C", "SPY": "AMEX:SPY",
-        "QQQ": "NASDAQ:QQQ", "BRK.B": "NYSE:BRK.B",
+        "IBM": "NYSE:IBM",   "BA":  "NYSE:BA",   "DIS": "NYSE:DIS",
+        "JPM": "NYSE:JPM",   "V":   "NYSE:V",    "MA":  "NYSE:MA",
+        "PG":  "NYSE:PG",    "KO":  "NYSE:KO",   "WMT": "NYSE:WMT",
+        "T":   "NYSE:T",     "XOM": "NYSE:XOM",  "CVX": "NYSE:CVX",
+        "LLY": "NYSE:LLY",  "MRK": "NYSE:MRK",  "ABBV":"NYSE:ABBV",
+        "JNJ": "NYSE:JNJ",  "PFE": "NYSE:PFE",  "BAC": "NYSE:BAC",
+        "GS":  "NYSE:GS",   "C":   "NYSE:C",    "SPY": "AMEX:SPY",
+        "QQQ": "NASDAQ:QQQ","BRK.B":"NYSE:BRK.B",
     }
     return exchange_map.get(normalized, normalized)

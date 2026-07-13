@@ -453,7 +453,7 @@ def fetch_stock_data(ticker: str) -> dict:
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html", context={"request": request})
 
 
 @app.get("/api/data")
